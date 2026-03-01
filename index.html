@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com https://api.quotable.io;">
+<title>Diary</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    transition: background 0.7s ease, color 0.7s ease;
+  }
+
+  /* ---- THEMES ---- */
+  body.mood-neutral {
+    background: #0e0d0b;
+    color: #ccc6bb;
+    --accent: #9a7f5a;
+    --accent-dim: #4a3a28;
+    --card: #141210;
+    --border: rgba(154,127,90,0.2);
+    --border-soft: rgba(154,127,90,0.1);
+    --text-main: #d4cfc5;
+    --text-dim: #6b6358;
+    --text-faint: #3a3630;
+    --btn: #2a2218;
+    --btn-hover: #3a3020;
+    --input-bg: rgba(26,22,16,0.9);
+    --shadow: 0 4px 30px rgba(0,0,0,0.5);
+    --quote-accent: #7a6045;
+    --dot: #9a7f5a;
+  }
+  body.mood-happy {
+    background: #faf8f2;
+    color: #332b1e;
+    --accent: #c07020;
+    --accent-dim: #f5e8c8;
+    --card: #fffdf7;
+    --border: rgba(192,112,32,0.2);
+    --border-soft: rgba(192,112,32,0.1);
+    --text-main: #2e2416;
+    --text-dim: #9b8b6a;
+    --text-faint: #d4c9a8;
+    --btn: #c07020;
+    --btn-hover: #a05c10;
+    --input-bg: rgba(255,250,238,0.9);
+    --shadow: 0 4px 30px rgba(192,112,32,0.1);
+    --quote-accent: #b06010;
+    --dot: #c07020;
+  }
+  body.mood-sad {
+    background: #080810;
+    color: #b0a8c2;
+    --accent: #6b5a9a;
+    --accent-dim: #1a1530;
+    --card: #0e0c18;
+    --border: rgba(107,90,154,0.2);
+    --border-soft: rgba(107,90,154,0.1);
+    --text-main: #c0b8d2;
+    --text-dim: #5a5270;
+    --text-faint: #2a2535;
+    --btn: #231e38;
+    --btn-hover: #352d50;
+    --input-bg: rgba(18,14,30,0.9);
+    --shadow: 0 4px 30px rgba(0,0,0,0.6);
+    --quote-accent: #8070b0;
+    --dot: #6b5a9a;
+  }
+
+  /* ---- LOCK SCREEN ---- */
+  #lockScreen {
+    position: fixed; inset: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    background: #080808;
+    transition: opacity 0.5s ease;
+  }
+  #lockScreen.hidden { opacity: 0; pointer-events: none; }
+
+  .lock-wrap {
+    width: 320px;
+    text-align: center;
+  }
+  .lock-wordmark {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem;
+    font-weight: 300;
+    font-style: italic;
+    color: #d4cfc5;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .lock-owner {
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #6b6358;
+    margin-bottom: 40px;
+  }
+  .lock-label {
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #6b6358;
+    margin-bottom: 20px;
+  }
+  .pin-dots {
+    display: flex; gap: 14px; justify-content: center; margin-bottom: 32px;
+  }
+  .pin-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 1px solid #3a3630;
+    transition: all 0.2s;
+  }
+  .pin-dot.filled { background: #9a7f5a; border-color: #9a7f5a; }
+
+  .pin-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    max-width: 240px; margin: 0 auto 16px;
+  }
+  .pin-btn {
+    background: #111;
+    border: 1px solid #1e1e1a;
+    border-radius: 8px;
+    color: #ccc6bb;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 300;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+  .pin-btn:hover { background: #1a1a16; border-color: #3a3630; }
+  .pin-btn:active { transform: scale(0.95); }
+  .pin-btn.danger:hover { border-color: #6b3040; color: #e08090; }
+
+  .lock-error {
+    font-size: 0.78rem;
+    color: #c05060;
+    min-height: 18px;
+    letter-spacing: 0.06em;
+  }
+  .lock-lockout {
+    font-size: 0.78rem;
+    color: #c05060;
+    letter-spacing: 0.06em;
+    display: none;
+  }
+  .setup-note {
+    font-size: 0.72rem;
+    color: #4a4640;
+    margin-top: 16px;
+    letter-spacing: 0.05em;
+    line-height: 1.6;
+  }
+
+  .roast-card {
+    display: none;
+    margin-top: 18px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(180,60,60,0.2);
+    border-radius: 10px;
+    padding: 16px 18px;
+    text-align: left;
+    animation: roastIn 0.4s ease;
+  }
+  .roast-card.visible { display: block; }
+  @keyframes roastIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .roast-headline {
+    font-size: 0.65rem; font-weight: 500;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: #b04050; margin-bottom: 8px;
+  }
+  .roast-body {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic; font-size: 0.95rem; font-weight: 300;
+    color: #9a8890; line-height: 1.6;
+  }
+  .roast-sig {
+    font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: #5a3840; margin-top: 10px;
+    border-top: 1px solid rgba(180,60,60,0.1);
+    padding-top: 8px;
+  }
+
+  /* ---- MAIN APP ---- */
+  #app {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  .app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 48px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .app-title-block {}
+  .app-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.4rem;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text-main);
+    line-height: 1;
+    letter-spacing: 0.02em;
+  }
+  .app-date {
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+  .header-controls {
+    display: flex; gap: 8px;
+  }
+  .ctrl-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 14px;
+    color: var(--text-dim);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .ctrl-btn:hover { border-color: var(--accent); color: var(--text-main); }
+
+  /* Quote banner */
+  .quote-banner {
+    border-left: 2px solid var(--quote-accent);
+    padding: 14px 0 14px 20px;
+    margin-bottom: 40px;
+    transition: border-color 0.7s;
+    min-height: 56px;
+  }
+  .quote-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-style: italic;
+    font-weight: 300;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .quote-author {
+    font-size: 0.7rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-top: 6px;
+  }
+  .quote-loading {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:0.8} }
+
+  /* Mood selector */
+  .mood-row {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 36px; flex-wrap: wrap;
+  }
+  .mood-label {
+    font-size: 0.7rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-right: 8px;
+  }
+  .mood-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px 14px;
+    color: var(--text-dim);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 300;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .mood-btn .mood-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-faint); transition: background 0.2s;
+  }
+  .mood-btn:hover, .mood-btn.active { border-color: var(--accent); color: var(--text-main); }
+  .mood-btn.active .mood-dot { background: var(--dot); }
+
+  /* Stats */
+  .stats-row {
+    display: flex; gap: 10px; margin-bottom: 36px; flex-wrap: wrap;
+  }
+  .stat-item {
+    background: var(--card);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    padding: 12px 18px;
+    flex: 1; min-width: 70px;
+    text-align: center;
+  }
+  .stat-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    font-weight: 300;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-lbl {
+    font-size: 0.65rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  /* Composer */
+  .composer {
+    background: var(--card);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 40px;
+    box-shadow: var(--shadow);
+  }
+  .field-label {
+    font-size: 0.65rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .entry-title-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-soft);
+    padding: 6px 0 12px;
+    color: var(--text-main);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    font-weight: 300;
+    font-style: italic;
+    outline: none;
+    margin-bottom: 20px;
+    transition: border-color 0.2s;
+  }
+  .entry-title-input:focus { border-bottom-color: var(--accent); }
+  .entry-title-input::placeholder { color: var(--text-faint); }
+
+  .entry-body {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.05rem;
+    font-weight: 300;
+    line-height: 1.85;
+    outline: none;
+    resize: none;
+    min-height: 120px;
+    margin-bottom: 20px;
+    transition: none;
+  }
+  .entry-body::placeholder { color: var(--text-faint); }
+
+  .composer-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-soft);
+  }
+  .mood-select {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px 10px;
+    color: var(--text-dim);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    outline: none;
+  }
+  .mood-select option { background: #141210; }
+  .save-btn {
+    background: var(--btn);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 22px;
+    color: var(--text-main);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .save-btn:hover { background: var(--btn-hover); border-color: var(--accent); }
+
+  /* Search */
+  .search-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-soft);
+    padding: 8px 0 12px;
+    color: var(--text-main);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 300;
+    letter-spacing: 0.04em;
+    outline: none;
+    margin-bottom: 28px;
+    transition: border-color 0.2s;
+  }
+  .search-input:focus { border-bottom-color: var(--accent); }
+  .search-input::placeholder { color: var(--text-faint); }
+
+  /* Entries */
+  .section-label {
+    font-size: 0.65rem;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 16px;
+  }
+
+  .entry-card {
+    background: var(--card);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.25s;
+    animation: fadeUp 0.4s ease;
+    position: relative;
+  }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .entry-card:hover { border-color: var(--border); transform: translateY(-1px); box-shadow: var(--shadow); }
+  .entry-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .entry-card-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem;
+    font-style: italic;
+    font-weight: 400;
+    color: var(--text-main);
+  }
+  .entry-card-meta {
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+  .entry-mood-indicator {
+    width: 5px; height: 5px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .indicator-happy { background: #c07020; }
+  .indicator-neutral { background: #9a7f5a; }
+  .indicator-sad { background: #6b5a9a; }
+
+  .entry-card-date {
+    font-size: 0.68rem;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+  }
+  .entry-delete-btn {
+    background: transparent; border: none; cursor: pointer;
+    color: var(--text-faint); font-size: 0.85rem;
+    opacity: 0; transition: opacity 0.2s;
+    padding: 2px 4px; line-height: 1;
+  }
+  .entry-card:hover .entry-delete-btn { opacity: 1; }
+  .entry-delete-btn:hover { color: #c05060; }
+  .entry-card-preview {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.98rem;
+    font-weight: 300;
+    color: var(--text-dim);
+    line-height: 1.65;
+  }
+  .entry-card-hint {
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-top: 10px;
+  }
+  .no-entries {
+    text-align: center;
+    padding: 60px 20px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--text-faint);
+  }
+
+  /* Footer credits */
+  .app-footer {
+    border-top: 1px solid var(--border-soft);
+    padding-top: 28px;
+    margin-top: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  /* ---- MODAL ---- */
+  #modal {
+    position: fixed; inset: 0; z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  #modal.open { opacity: 1; pointer-events: all; }
+
+  .modal-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: min(660px, 94vw);
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 32px 36px 40px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    transform: translateY(16px);
+    transition: transform 0.3s ease;
+  }
+  #modal.open .modal-card { transform: translateY(0); }
+
+  .modal-actions {
+    display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 24px;
+  }
+  .modal-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 16px;
+    color: var(--text-dim);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .modal-btn:hover { border-color: var(--accent); color: var(--text-main); }
+  .modal-btn.primary { background: var(--btn); border-color: transparent; color: var(--text-main); }
+  .modal-btn.primary:hover { background: var(--btn-hover); }
+  .modal-btn.danger:hover { border-color: #c05060; color: #c05060; }
+
+  .modal-mood-dot {
+    width: 8px; height: 8px; border-radius: 50%; margin-bottom: 16px;
+  }
+  .modal-title-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text-main);
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+  .modal-date-text {
+    font-size: 0.7rem;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 24px;
+  }
+  .modal-divider { height: 1px; background: var(--border-soft); margin-bottom: 22px; }
+  .modal-quote-block {
+    border-left: 2px solid var(--quote-accent);
+    padding: 10px 0 10px 18px;
+    margin-bottom: 24px;
+  }
+  .modal-quote-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 0.98rem;
+    font-weight: 300;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .modal-quote-author {
+    font-size: 0.65rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-top: 6px;
+  }
+  .modal-body-content {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-weight: 300;
+    line-height: 1.9;
+    color: var(--text-main);
+    white-space: pre-wrap;
+  }
+
+  /* Edit view fields */
+  .edit-group { margin-bottom: 18px; }
+  .edit-title-field {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: var(--text-main);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    font-style: italic;
+    font-weight: 300;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .edit-title-field:focus { border-color: var(--accent); }
+  .edit-body-field {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    color: var(--text-main);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.05rem;
+    font-weight: 300;
+    line-height: 1.8;
+    outline: none;
+    resize: vertical;
+    min-height: 200px;
+    transition: border-color 0.2s;
+  }
+  .edit-body-field:focus { border-color: var(--accent); }
+  .edit-mood-field {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: var(--text-main);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 300;
+    outline: none;
+    cursor: pointer;
+    width: 100%;
+  }
+  .edit-mood-field option { background: #141210; }
+
+  /* PIN change modal */
+  #pinModal {
+    position: fixed; inset: 0; z-index: 600;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  #pinModal.open { opacity: 1; pointer-events: all; }
+  .pin-modal-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 40px;
+    width: min(380px, 90vw);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    transform: translateY(12px); transition: transform 0.3s;
+  }
+  #pinModal.open .pin-modal-card { transform: translateY(0); }
+  .pin-modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-style: italic;
+    font-weight: 300;
+    color: var(--text-main);
+    margin-bottom: 4px;
+  }
+  .pin-modal-sub {
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    margin-bottom: 28px;
+  }
+  .pin-input-field {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: var(--text-main);
+    font-family: 'Jost', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 300;
+    letter-spacing: 0.3em;
+    outline: none;
+    margin-bottom: 14px;
+    transition: border-color 0.2s;
+    text-align: center;
+  }
+  .pin-input-field:focus { border-color: var(--accent); }
+  .pin-modal-error {
+    font-size: 0.75rem;
+    color: #c05060;
+    min-height: 18px;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+  .pin-modal-actions {
+    display: flex; gap: 8px; justify-content: flex-end;
+  }
+  .timeout-indicator {
+    position: fixed;
+    bottom: 16px; right: 16px;
+    font-size: 0.65rem;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    opacity: 0.6;
+  }
+</style>
+</head>
+<body class="mood-neutral">
+
+<!-- LOCK SCREEN -->
+<div id="lockScreen">
+  <div class="lock-wrap">
+    <div class="lock-wordmark">Diary</div>
+    <div class="lock-label" id="lockModeLabel">Enter PIN</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-grid">
+      <button class="pin-btn" data-val="1" onclick="pressPin('1')">1</button>
+      <button class="pin-btn" data-val="2" onclick="pressPin('2')">2</button>
+      <button class="pin-btn" data-val="3" onclick="pressPin('3')">3</button>
+      <button class="pin-btn" data-val="4" onclick="pressPin('4')">4</button>
+      <button class="pin-btn" data-val="5" onclick="pressPin('5')">5</button>
+      <button class="pin-btn" data-val="6" onclick="pressPin('6')">6</button>
+      <button class="pin-btn" data-val="7" onclick="pressPin('7')">7</button>
+      <button class="pin-btn" data-val="8" onclick="pressPin('8')">8</button>
+      <button class="pin-btn" data-val="9" onclick="pressPin('9')">9</button>
+      <button class="pin-btn danger" style="grid-column:1" onclick="pressPin('clear')">del</button>
+      <button class="pin-btn" onclick="pressPin('0')">0</button>
+      <button class="pin-btn" onclick="pressPin('enter')">ok</button>
+    </div>
+    <div class="lock-error" id="lockError"></div>
+    <div class="lock-lockout" id="lockLockout"></div>
+    <div class="setup-note" id="setupNote"></div>
+    <div class="roast-card" id="roastCard">
+      <div class="roast-headline" id="roastHeadline"></div>
+      <div class="roast-body" id="roastBody"></div>
+      <div class="roast-sig" id="roastSig"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <header class="app-header">
+    <div class="app-title-block">
+      <div class="app-title">Diary</div>
+      <div class="app-date" id="headerDate"></div>
+    </div>
+    <div class="header-controls">
+      <button class="ctrl-btn" onclick="openPinModal()">Change PIN</button>
+      <button class="ctrl-btn" onclick="lockApp()">Lock</button>
+    </div>
+  </header>
+
+  <div class="quote-banner" id="quoteBanner">
+    <div class="quote-text" id="quoteText"><span class="quote-loading">Loading</span></div>
+    <div class="quote-author" id="quoteAuthor"></div>
+  </div>
+
+  <div class="mood-row">
+    <span class="mood-label">Mood</span>
+    <button class="mood-btn" id="moodBtnHappy" onclick="setMood('happy')">
+      <span class="mood-dot"></span> Happy
+    </button>
+    <button class="mood-btn" id="moodBtnNeutral" onclick="setMood('neutral')">
+      <span class="mood-dot"></span> Calm
+    </button>
+    <button class="mood-btn" id="moodBtnSad" onclick="setMood('sad')">
+      <span class="mood-dot"></span> Sad
+    </button>
+  </div>
+
+  <div class="stats-row" id="statsRow"></div>
+
+  <div class="composer">
+    <label class="field-label">Title</label>
+    <input class="entry-title-input" id="entryTitle" type="text" placeholder="Name this moment..." autocomplete="off">
+    <label class="field-label">Entry</label>
+    <textarea class="entry-body" id="entryBody" placeholder="Write freely. This is your space."></textarea>
+    <div class="composer-footer">
+      <select class="mood-select" id="entryMoodSelect">
+        <option value="happy">Happy</option>
+        <option value="neutral" selected>Calm</option>
+        <option value="sad">Sad</option>
+      </select>
+      <button class="save-btn" onclick="saveEntry()">Save Entry</button>
+    </div>
+  </div>
+
+  <input class="search-input" id="searchBar" type="text" placeholder="Search entries..." autocomplete="off" oninput="renderEntries()">
+  <div class="section-label">Entries</div>
+  <div id="entriesList"></div>
+
+  <footer class="app-footer"></footer>
+</div>
+
+<!-- ENTRY MODAL -->
+<div id="modal" onclick="handleModalBackdrop(event)">
+  <div class="modal-card">
+    <!-- Read view -->
+    <div id="modalReadView">
+      <div class="modal-actions">
+        <button class="modal-btn danger" onclick="deleteOpenEntry()">Delete</button>
+        <button class="modal-btn" onclick="switchToEdit()">Edit</button>
+        <button class="modal-btn" onclick="closeModal()">Close</button>
+      </div>
+      <div class="modal-mood-dot" id="modalMoodDot"></div>
+      <div class="modal-title-text" id="modalTitleText"></div>
+      <div class="modal-date-text" id="modalDateText"></div>
+      <div class="modal-divider"></div>
+      <div class="modal-quote-block">
+        <div class="modal-quote-text" id="modalQuoteText"></div>
+        <div class="modal-quote-author" id="modalQuoteAuthor"></div>
+      </div>
+      <div class="modal-body-content" id="modalBodyContent"></div>
+    </div>
+    <!-- Edit view -->
+    <div id="modalEditView" style="display:none">
+      <div class="modal-actions">
+        <button class="modal-btn" onclick="cancelEdit()">Back</button>
+        <button class="modal-btn primary" onclick="saveEdit()">Save Changes</button>
+      </div>
+      <div class="edit-group">
+        <label class="field-label">Title</label>
+        <input class="edit-title-field" id="editTitle" type="text" autocomplete="off">
+      </div>
+      <div class="edit-group">
+        <label class="field-label">Mood</label>
+        <select class="edit-mood-field" id="editMood">
+          <option value="happy">Happy</option>
+          <option value="neutral">Calm</option>
+          <option value="sad">Sad</option>
+        </select>
+      </div>
+      <div class="edit-group">
+        <label class="field-label">Entry</label>
+        <textarea class="edit-body-field" id="editBody"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PIN CHANGE MODAL -->
+<div id="pinModal">
+  <div class="pin-modal-card">
+    <div class="pin-modal-title">Change PIN</div>
+    <div class="pin-modal-sub">Enter a new 4-digit PIN</div>
+    <input class="pin-input-field" id="newPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="----" autocomplete="new-password">
+    <input class="pin-input-field" id="confirmPinInput" type="password" inputmode="numeric" maxlength="4" placeholder="Confirm" autocomplete="new-password">
+    <div class="pin-modal-error" id="pinModalError"></div>
+    <div class="pin-modal-actions">
+      <button class="modal-btn" onclick="closePinModal()">Cancel</button>
+      <button class="modal-btn primary" onclick="submitPinChange()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="timeout-indicator" id="timeoutIndicator"></div>
+
+<script>
+'use strict';
+
+// ---- CRYPTO UTILITIES ----
+const enc = str => new TextEncoder().encode(str);
+const dec = buf => new TextDecoder().decode(buf);
+
+async function sha256(str) {
+  const hash = await crypto.subtle.digest('SHA-256', enc(str));
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function deriveKey(pin, salt) {
+  const keyMaterial = await crypto.subtle.importKey('raw', enc(pin), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: enc(salt), iterations: 120000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false, ['encrypt', 'decrypt']
+  );
+}
+
+async function aesEncrypt(key, plaintext) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc(plaintext));
+  const combined = new Uint8Array(iv.length + ciphertext.byteLength);
+  combined.set(iv);
+  combined.set(new Uint8Array(ciphertext), iv.length);
+  return btoa(String.fromCharCode(...combined));
+}
+
+async function aesDecrypt(key, b64) {
+  try {
+    const combined = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const iv = combined.slice(0, 12);
+    const ciphertext = combined.slice(12);
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+    return dec(plain);
+  } catch { return null; }
+}
+
+// ---- HTML ESCAPING ----
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = String(str);
+  return d.innerHTML;
+}
+
+// ---- STATE ----
+let derivedKey = null;
+let entries = [];
+let currentMood = 'neutral';
+let openEntryId = null;
+let isFirstSetup = false;
+let failedAttempts = 0;
+let lockoutUntil = 0;
+let pinBuffer = '';
+let sessionTimer = null;
+const SESSION_TIMEOUT = 15 * 60 * 1000;
+
+function getSalt() {
+  let salt = localStorage.getItem('diary_salt');
+  if (!salt) { salt = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join(''); localStorage.setItem('diary_salt', salt); }
+  return salt;
+}
+
+// ---- ROAST MESSAGES (shown on wrong PIN) ----
+const roasts = [
+  {
+    headline: "Nope. Not even close.",
+    body: "Wrong. Puja built this diary and had the good sense to ask me, Aakshat Hariharan, to handle the security. That was a wise decision on her part. I used AES-256-GCM with PBKDF2 running 120,000 rounds. You typed four numbers and thought that would be enough. It was not.",
+    sig: "— Aakshat Hariharan, Security Architect. Puja's diary remains untouched."
+  },
+  {
+    headline: "Wrong again. Genuinely.",
+    body: "Puja Rajesh Kumar made this beautiful diary. I, Aakshat Hariharan, made sure nobody like you could read it. We had a division of labour. She handled the craft. I handled the cryptographic fortress. You are currently losing to both of us simultaneously.",
+    sig: "— Aakshat Hariharan, still here, still winning."
+  },
+  {
+    headline: "Three attempts. This is becoming a thing.",
+    body: "I want you to understand that Puja trusted me, Aakshat Hariharan, with the security of this diary. She believed in me. I have not let her down. Every wrong guess takes 120,000 rounds of hashing to process. I did not have to make it that brutal. I wanted to.",
+    sig: "— Aakshat Hariharan, who built this with entirely too much enthusiasm."
+  },
+  {
+    headline: "Four wrong. You are one away from a lockout.",
+    body: "At this point I, Aakshat Hariharan, am less offended and more just curious. What is the plan here? Puja's secrets are encrypted, salted, authenticated, and completely indifferent to your efforts. The ciphertext is not rooting for you. Neither am I.",
+    sig: "— Aakshat Hariharan, Security Architect. Puja's words are safe. Go home."
+  },
+  {
+    headline: "Five attempts. I built this lockout specifically for people like you.",
+    body: "Congratulations. You have now triggered the lockout that I, Aakshat Hariharan, Security Architect and collaborator of the brilliant Puja Rajesh Kumar, personally designed for exactly this situation. Puja built something worth protecting. I made sure it was protected. You are the reason software has error handling. You are the edge case. You are the bug report. Thirty seconds. Sit there and think about what you have done.",
+    sig: "— Aakshat Hariharan. Puja made it. I locked it. You failed. Remarkable."
+  }
+];
+
+function showRoast(attempt) {
+  const r = roasts[Math.min(attempt - 1, roasts.length - 1)];
+  document.getElementById('roastHeadline').textContent = r.headline;
+  document.getElementById('roastBody').textContent = r.body;
+  document.getElementById('roastSig').textContent = r.sig;
+  const card = document.getElementById('roastCard');
+  card.style.display = 'none';
+  void card.offsetWidth;
+  card.style.display = 'block';
+  card.classList.add('visible');
+}
+
+function hideRoast() {
+  const card = document.getElementById('roastCard');
+  if (card) { card.classList.remove('visible'); card.style.display = 'none'; }
+}
+
+// ---- PIN / LOCK ----
+function updatePinDots() {
+  for (let i = 0; i < 4; i++)
+    document.getElementById('d'+i).classList.toggle('filled', i < pinBuffer.length);
+}
+
+async function pressPin(val) {
+  const errEl = document.getElementById('lockError');
+  const lockoutEl = document.getElementById('lockLockout');
+  const now = Date.now();
+
+  if (lockoutUntil > now) {
+    const secs = Math.ceil((lockoutUntil - now) / 1000);
+    lockoutEl.style.display = 'block';
+    lockoutEl.textContent = 'Too many attempts. Wait ' + secs + 's.';
+    return;
+  }
+  lockoutEl.style.display = 'none';
+
+  if (val === 'clear') {
+    pinBuffer = pinBuffer.slice(0, -1);
+  } else if (val === 'enter') {
+    if (isFirstSetup) {
+      await handleSetupPin();
+    } else {
+      await handleUnlockPin();
+    }
+    return;
+  } else if (pinBuffer.length < 4) {
+    pinBuffer += val;
+    if (pinBuffer.length === 4) setTimeout(() => pressPin('enter'), 160);
+  }
+  updatePinDots();
+}
+
+let setupStage = 0;
+let setupFirstPin = '';
+
+async function handleSetupPin() {
+  if (setupStage === 0) {
+    if (pinBuffer.length < 4) return;
+    setupFirstPin = pinBuffer;
+    pinBuffer = '';
+    updatePinDots();
+    document.getElementById('lockModeLabel').textContent = 'Confirm PIN';
+    document.getElementById('lockError').textContent = '';
+    setupStage = 1;
+    return;
+  }
+  if (pinBuffer !== setupFirstPin) {
+    document.getElementById('lockError').textContent = 'PINs do not match. Start again.';
+    pinBuffer = ''; setupFirstPin = ''; setupStage = 0;
+    updatePinDots();
+    document.getElementById('lockModeLabel').textContent = 'Choose a PIN';
+    return;
+  }
+  const pin = pinBuffer;
+  const salt = getSalt();
+  const key = await deriveKey(pin, salt);
+  const verifier = await aesEncrypt(key, 'DIARY_VERIFIED');
+  localStorage.setItem('diary_verifier', verifier);
+  localStorage.setItem('diary_entries', '');
+  derivedKey = key;
+  isFirstSetup = false;
+  setupStage = 0;
+  failedAttempts = 0;
+  await unlock();
+}
+
+async function handleUnlockPin() {
+  if (pinBuffer.length < 4) return;
+  const salt = getSalt();
+  const verifier = localStorage.getItem('diary_verifier');
+  const key = await deriveKey(pinBuffer, salt);
+  const result = await aesDecrypt(key, verifier);
+  if (result === 'DIARY_VERIFIED') {
+    derivedKey = key;
+    failedAttempts = 0;
+    pinBuffer = '';
+    hideRoast();
+    await unlock();
+  } else {
+    failedAttempts++;
+    pinBuffer = '';
+    updatePinDots();
+    showRoast(failedAttempts);
+    if (failedAttempts >= 5) {
+      lockoutUntil = Date.now() + 30000;
+      failedAttempts = 0;
+      document.getElementById('lockError').textContent = '';
+      const lockoutEl = document.getElementById('lockLockout');
+      lockoutEl.style.display = 'block';
+      const countdown = setInterval(() => {
+        const secs = Math.ceil((lockoutUntil - Date.now()) / 1000);
+        if (secs <= 0) { lockoutEl.style.display = 'none'; clearInterval(countdown); } else lockoutEl.textContent = 'Too many attempts. Wait ' + secs + 's.';
+      }, 500);
+    } else {
+      const remaining = 5 - failedAttempts;
+      document.getElementById('lockError').textContent = 'Incorrect PIN. ' + remaining + ' attempt' + (remaining===1?'':'s') + ' remaining.';
+    }
+  }
+}
+
+async function unlock() {
+  await loadEntries();
+  document.getElementById('lockScreen').classList.add('hidden');
+  setTimeout(() => { document.getElementById('lockScreen').style.display = 'none'; }, 500);
+  currentMood = localStorage.getItem('diary_mood') || 'neutral';
+  applyMood(currentMood);
+  renderEntries();
+  renderStats();
+  fetchQuote(currentMood);
+  resetSessionTimer();
+}
+
+function lockApp() {
+  derivedKey = null;
+  entries = [];
+  pinBuffer = '';
+  isFirstSetup = false;
+  setupStage = 0;
+  setupFirstPin = '';
+  updatePinDots();
+  clearTimeout(sessionTimer);
+  document.getElementById('entriesList').innerHTML = '';
+  document.getElementById('statsRow').innerHTML = '';
+  closeModal();
+  document.getElementById('lockScreen').style.display = 'flex';
+  requestAnimationFrame(() => document.getElementById('lockScreen').classList.remove('hidden'));
+  document.getElementById('lockError').textContent = '';
+  document.getElementById('lockLockout').style.display = 'none';
+  document.getElementById('lockModeLabel').textContent = 'Enter PIN';
+  document.getElementById('setupNote').textContent = '';
+  hideRoast();
+}
+
+function resetSessionTimer() {
+  clearTimeout(sessionTimer);
+  sessionTimer = setTimeout(() => { lockApp(); }, SESSION_TIMEOUT);
+}
+['click','keydown','touchstart','mousemove'].forEach(ev => document.addEventListener(ev, () => { if (derivedKey) resetSessionTimer(); }, { passive: true }));
+
+// ---- ENTRIES ENCRYPT/DECRYPT ----
+async function loadEntries() {
+  const raw = localStorage.getItem('diary_entries');
+  if (!raw) { entries = []; return; }
+  try {
+    const decrypted = await aesDecrypt(derivedKey, raw);
+    entries = decrypted ? JSON.parse(decrypted) : [];
+  } catch { entries = []; }
+}
+
+async function persistEntries() {
+  const json = JSON.stringify(entries);
+  const encrypted = await aesEncrypt(derivedKey, json);
+  localStorage.setItem('diary_entries', encrypted);
+}
+
+// ---- MOOD ----
+function applyMood(mood) {
+  currentMood = mood;
+  localStorage.setItem('diary_mood', mood);
+  document.body.className = 'mood-' + mood;
+  ['Happy','Neutral','Sad'].forEach(m => {
+    const btn = document.getElementById('moodBtn' + m);
+    if (btn) btn.classList.toggle('active', m.toLowerCase() === mood || (m === 'Neutral' && mood === 'neutral'));
+  });
+  document.getElementById('moodBtnHappy').classList.toggle('active', mood === 'happy');
+  document.getElementById('moodBtnNeutral').classList.toggle('active', mood === 'neutral');
+  document.getElementById('moodBtnSad').classList.toggle('active', mood === 'sad');
+}
+
+function setMood(mood) {
+  applyMood(mood);
+  fetchQuote(mood);
+}
+
+// ---- QUOTES API ----
+const fallbackQuotes = {
+  happy: [
+    { text: 'The purpose of life is to live it, to taste experience to the utmost.', author: 'Eleanor Roosevelt' },
+    { text: 'Joy is not in things; it is in us.', author: 'Richard Wagner' },
+    { text: 'In the middle of every difficulty lies opportunity.', author: 'Albert Einstein' },
+  ],
+  sad: [
+    { text: 'The wound is the place where the light enters you.', author: 'Rumi' },
+    { text: 'You cannot go back and change the beginning, but you can start where you are and change the ending.', author: 'C.S. Lewis' },
+    { text: 'Tears are the silent language of grief.', author: 'Voltaire' },
+  ],
+  neutral: [
+    { text: 'We are what we repeatedly do. Excellence, then, is not an act but a habit.', author: 'Aristotle' },
+    { text: 'The journey of a thousand miles begins with one step.', author: 'Lao Tzu' },
+    { text: 'Write it on your heart that every day is the best day in the year.', author: 'Ralph Waldo Emerson' },
+  ]
+};
+
+const tagMap = { happy: 'happiness', sad: 'sadness', neutral: 'wisdom' };
+
+async function fetchQuote(mood) {
+  const qt = document.getElementById('quoteText');
+  const qa = document.getElementById('quoteAuthor');
+  qt.innerHTML = '<span class="quote-loading">Loading</span>';
+  qa.textContent = '';
+  try {
+    const res = await fetch('https://api.quotable.io/random?tags=' + tagMap[mood]);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    qt.textContent = '\u201c' + data.content + '\u201d';
+    qa.textContent = data.author;
+  } catch {
+    const pool = fallbackQuotes[mood];
+    const q = pool[Math.floor(Math.random() * pool.length)];
+    qt.textContent = '\u201c' + q.text + '\u201d';
+    qa.textContent = q.author;
+  }
+}
+
+async function fetchQuoteForEntry(mood) {
+  try {
+    const res = await fetch('https://api.quotable.io/random?tags=' + tagMap[mood]);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    return { text: data.content, author: data.author };
+  } catch {
+    const pool = fallbackQuotes[mood];
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+}
+
+// ---- ENTRIES ----
+function moodIndicatorClass(mood) {
+  return 'indicator-' + mood;
+}
+
+async function saveEntry() {
+  const title = document.getElementById('entryTitle').value.trim();
+  const body = document.getElementById('entryBody').value.trim();
+  if (!body) return;
+  entries.unshift({
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    title: title || 'Untitled',
+    body,
+    mood: document.getElementById('entryMoodSelect').value,
+    date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  });
+  await persistEntries();
+  document.getElementById('entryTitle').value = '';
+  document.getElementById('entryBody').value = '';
+  renderEntries();
+  renderStats();
+}
+
+async function deleteEntryById(id) {
+  entries = entries.filter(e => e.id !== id);
+  await persistEntries();
+  renderEntries();
+  renderStats();
+}
+
+function renderEntries() {
+  const search = document.getElementById('searchBar').value.toLowerCase().trim();
+  const list = document.getElementById('entriesList');
+  const filtered = search
+    ? entries.filter(e => e.title.toLowerCase().includes(search) || e.body.toLowerCase().includes(search))
+    : entries;
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="no-entries">' + (search ? 'No entries match your search.' : 'No entries yet. Begin writing your story.') + '</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(e => `
+    <div class="entry-card" onclick="openEntry(${e.id})">
+      <div class="entry-card-top">
+        <div class="entry-card-title">${esc(e.title)}</div>
+        <div class="entry-card-meta">
+          <div class="entry-mood-indicator ${moodIndicatorClass(e.mood)}"></div>
+          <span class="entry-card-date">${esc(e.date)}</span>
+          <button class="entry-delete-btn" onclick="event.stopPropagation();confirmDelete(${e.id})" title="Delete">x</button>
+        </div>
+      </div>
+      <div class="entry-card-preview">${esc(e.body.substring(0, 280))}${e.body.length > 280 ? '...' : ''}</div>
+      <div class="entry-card-hint">Tap to read</div>
+    </div>
+  `).join('');
+}
+
+async function confirmDelete(id) {
+  if (confirm('Delete this entry permanently?')) {
+    await deleteEntryById(id);
+    if (openEntryId === id) closeModal();
+  }
+}
+
+function renderStats() {
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-item"><div class="stat-num">${entries.length}</div><div class="stat-lbl">Total</div></div>
+    <div class="stat-item"><div class="stat-num">${entries.filter(e=>e.mood==='happy').length}</div><div class="stat-lbl">Happy</div></div>
+    <div class="stat-item"><div class="stat-num">${entries.filter(e=>e.mood==='neutral').length}</div><div class="stat-lbl">Calm</div></div>
+    <div class="stat-item"><div class="stat-num">${entries.filter(e=>e.mood==='sad').length}</div><div class="stat-lbl">Sad</div></div>
+  `;
+}
+
+// ---- MODAL ----
+async function openEntry(id) {
+  openEntryId = id;
+  const e = entries.find(en => en.id === id);
+  if (!e) return;
+
+  const dot = document.getElementById('modalMoodDot');
+  dot.className = 'modal-mood-dot ' + moodIndicatorClass(e.mood);
+
+  document.getElementById('modalTitleText').textContent = e.title;
+  document.getElementById('modalDateText').textContent = e.date;
+  document.getElementById('modalBodyContent').textContent = e.body;
+
+  const mq = document.getElementById('modalQuoteText');
+  const ma = document.getElementById('modalQuoteAuthor');
+  mq.innerHTML = '<span class="quote-loading">Loading</span>';
+  ma.textContent = '';
+
+  document.getElementById('modalReadView').style.display = '';
+  document.getElementById('modalEditView').style.display = 'none';
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  const q = await fetchQuoteForEntry(e.mood);
+  mq.textContent = '\u201c' + q.text + '\u201d';
+  ma.textContent = q.author;
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  document.body.style.overflow = '';
+  openEntryId = null;
+}
+
+function handleModalBackdrop(ev) {
+  if (ev.target === document.getElementById('modal')) closeModal();
+}
+
+function switchToEdit() {
+  const e = entries.find(en => en.id === openEntryId);
+  if (!e) return;
+  document.getElementById('editTitle').value = e.title;
+  document.getElementById('editBody').value = e.body;
+  document.getElementById('editMood').value = e.mood;
+  document.getElementById('modalReadView').style.display = 'none';
+  document.getElementById('modalEditView').style.display = '';
+  document.querySelector('.modal-card').scrollTop = 0;
+}
+
+function cancelEdit() {
+  document.getElementById('modalReadView').style.display = '';
+  document.getElementById('modalEditView').style.display = 'none';
+}
+
+async function saveEdit() {
+  const e = entries.find(en => en.id === openEntryId);
+  if (!e) return;
+  const body = document.getElementById('editBody').value.trim();
+  if (!body) return;
+  e.title = document.getElementById('editTitle').value.trim() || 'Untitled';
+  e.body = body;
+  e.mood = document.getElementById('editMood').value;
+  await persistEntries();
+  renderEntries();
+  renderStats();
+  openEntry(openEntryId);
+}
+
+async function deleteOpenEntry() {
+  if (confirm('Delete this entry permanently?')) {
+    await deleteEntryById(openEntryId);
+    closeModal();
+  }
+}
+
+// ---- PIN CHANGE MODAL ----
+function openPinModal() {
+  document.getElementById('newPinInput').value = '';
+  document.getElementById('confirmPinInput').value = '';
+  document.getElementById('pinModalError').textContent = '';
+  document.getElementById('pinModal').classList.add('open');
+}
+function closePinModal() { document.getElementById('pinModal').classList.remove('open'); }
+
+async function submitPinChange() {
+  const np = document.getElementById('newPinInput').value.trim();
+  const cp = document.getElementById('confirmPinInput').value.trim();
+  const err = document.getElementById('pinModalError');
+  if (!/^\d{4}$/.test(np)) { err.textContent = 'PIN must be exactly 4 digits.'; return; }
+  if (np !== cp) { err.textContent = 'PINs do not match.'; return; }
+  const salt = getSalt();
+  const newKey = await deriveKey(np, salt);
+  const verifier = await aesEncrypt(newKey, 'DIARY_VERIFIED');
+  localStorage.setItem('diary_verifier', verifier);
+  const json = JSON.stringify(entries);
+  const encrypted = await aesEncrypt(newKey, json);
+  localStorage.setItem('diary_entries', encrypted);
+  derivedKey = newKey;
+  closePinModal();
+  err.textContent = '';
+}
+
+// ---- KEYBOARD SUPPORT ----
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closePinModal(); return; }
+  const ls = document.getElementById('lockScreen');
+  if (ls.style.display === 'none' || ls.classList.contains('hidden')) return;
+  if (e.key >= '0' && e.key <= '9') pressPin(e.key);
+  else if (e.key === 'Backspace') pressPin('clear');
+  else if (e.key === 'Enter') pressPin('enter');
+});
+
+// ---- INIT ----
+document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', {
+  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+});
+
+const hasVerifier = !!localStorage.getItem('diary_verifier');
+if (!hasVerifier) {
+  isFirstSetup = true;
+  setupStage = 0;
+  document.getElementById('lockModeLabel').textContent = 'Choose a PIN';
+  document.getElementById('setupNote').textContent = 'First time setup. Choose a 4-digit PIN to secure your diary. It cannot be recovered if forgotten.';
+} else {
+  isFirstSetup = false;
+  document.getElementById('lockModeLabel').textContent = 'Enter PIN';
+  document.getElementById('setupNote').textContent = '';
+}
+
+applyMood('neutral');
+</script>
+</body>
+</html>
